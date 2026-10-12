@@ -20,17 +20,21 @@ author:
   country: China
   email: liulb@zgclab.edu.cn
 
+
 informative:
   RFC2678:
   RFC2681:
   RFC2827:
   RFC3393:
+  RFC3432:
   RFC3704:
   RFC4656:
   RFC4737:
   RFC5136:
   RFC5357:
   RFC5560:
+  RFC6291:
+  RFC6390:
   RFC6703:
   RFC7679:
   RFC7680:
@@ -38,9 +42,14 @@ informative:
   RFC8704:
   RFC8762:
   RFC8911:
+  RFC9065:
   RFC9097:
   RFC9232:
+  RFC9312:
   RFC9341:
+  RFC9343: 
+  RFC10014:
+  I-D.ietf-ippm-on-path-active-measurements: 
 
 --- abstract
 IP Performance Measurement (IPPM) metrics characterize properties such as connectivity, packet loss, delay, delay variation, packet reordering, packet duplication, and capacity. A result can be correct for the metric and measurement method used while still being insufficient to explain the network condition that produced it or to describe traffic outside the measured scope.
@@ -52,9 +61,13 @@ This document does not define new metrics or measurement protocols, and it does 
 
 # Introduction {#intro}
 
-The IP Performance Measurement (IPPM) framework defines metrics and measurement methods for characterizing packet delivery and network performance. Examples include connectivity {{RFC2678}}, one-way and round-trip delay {{RFC7679}} {{RFC2681}}, packet loss {{RFC7680}}, delay variation {{RFC3393}}, packet reordering {{RFC4737}}, packet duplication {{RFC5560}}, and capacity-related metrics {{RFC5136}} {{RFC9097}}. The Performance Metrics Registry in {{RFC8911}} records metric definitions, parameters, methods, and other information needed to perform and report measurements. This document focuses on packet-transfer and network-performance metrics in the IPPM context.
+The IP Performance Measurement (IPPM) framework defines metrics and measurement methods for characterizing packet delivery and network performance. Examples include connectivity {{RFC2678}}, one-way and round-trip delay {{RFC7679}} {{RFC2681}}, packet loss {{RFC7680}}, delay variation {{RFC3393}}, packet reordering {{RFC4737}}, packet duplication {{RFC5560}}, and capacity-related metrics {{RFC5136}} {{RFC9097}}. 
+{{RFC8911}} defines the Performance Metrics Registry, which records metric definitions, parameters, methods of measurement, outputs, and related information.
+This document focuses on packet-transfer and network-performance metrics in the IPPM context.
 
-The metric, its parameters, and the measurement method define the scope of a metric result. That result does not identify the condition that produced it. For example, a delay value does not separate propagation, transmission, queueing, processing, and timestamping effects. A loss result does not identify where the network discarded packets or why it did so. Reordering identifies an ordering property of the measured stream, not the mechanism that caused it. Capacity results depend on the metric definition, offered load, packet characteristics, qualification criteria, and network state.
+The metric, its parameters, and the measurement method define the scope of a metric result. That result does not identify the condition that produced it. For example, a delay value does not separate propagation, transmission, queueing, processing, and timestamping effects. 
+A packet loss result does not identify whether or where the packet was discarded, or why the destination did not receive it within the specified waiting time.
+Reordering identifies an ordering property of the measured stream, not the mechanism that caused it. Capacity results depend on the metric definition, offered load, packet characteristics, qualification criteria, and network state.
 
 The distinction matters when operators generalize a measurement result or use it to support an operational explanation. The metric result states the measured fact. Statements about congestion, routing or forwarding changes, filtering, endpoint behavior, or other causes require additional evidence. A valid result can also be unrepresentative of traffic outside the measured population, path, direction, or time interval.
 
@@ -76,7 +89,12 @@ This document limits its scope to interpretation of measurement results. The doc
 
 # Terminology {#terms}
 
-This document uses the terms Active Performance Measurement, Passive Performance Measurement, and Hybrid Performance Measurement consistently with {{RFC7799}}. It also uses Performance Metric and the distinction between fixed and runtime parameters consistently with {{RFC8911}}. Where terms are already defined by existing IPPM documents or measurement protocols, this document uses those terms consistently with their existing definitions.
+This document uses the terms Active Performance Measurement, Passive Performance Measurement, and Hybrid Performance Measurement consistently with {{RFC7799}}. 
+It also uses Performance Metric and the distinction between fixed and runtime parameters consistently with {{RFC8911}}.
+
+The term Operations, Administration, and Maintenance (OAM) follows {{RFC6291}}. This document follows the OAM characterization guidelines in {{RFC10014}}.
+
+Where terms are already defined by existing IPPM documents or measurement protocols, this document uses those terms consistently with their existing definitions.
 
 Performance Metric:
 : A quantitative measure of performance targeted to an IETF-specified protocol or to an application transported over an IETF-specified protocol, consistent with {{RFC8911}}. In this document, the discussion focuses on IPPM metrics that characterize packet-transfer or network-performance properties.
@@ -92,9 +110,6 @@ Metric Parameters:
 
 Interpretation Context:
 : Information needed to understand what conclusions a metric result can support. Interpretation context can include the metric definition, metric parameters, packet or traffic population, measurement interval, observation scope, measurement method, path information, and relevant network or measurement-system state.
-
-Operational Context:
-: Control-plane, management-plane, data-plane, Operations, Administration, and Maintenance (OAM), telemetry, endpoint, observation-system, controller, or operator-provided information that can help explain a metric result. Examples include routing state, forwarding state, interface state, queue counters, policy state, endpoint state, observation-point state, collector state, logs, and event records.
 
 Observation Point:
 : A location where a measurement function observes, counts, timestamps, samples, collects, or otherwise processes packets or measurement information. An endpoint, network device, interface, or another measurement function can host an observation point.
@@ -141,6 +156,14 @@ A result consistent with one explanation does not exclude the others.
 Endpoints or observation points, traffic selection, the time interval, and the measurement method define measurement scope. A result for one path, traffic class, direction, or interval does not describe another.
 Any generalization should remain within the visibility of the measurement unless additional evidence supports a broader claim.
 
+## End-to-End and Hop-by-Hop Measurement Scope {#end_hop}
+
+End-to-end measurements characterize performance between two measurement points and can capture the aggregate effect of the path between them. However, an end-to-end result does not by itself identify which intermediate node, link, or path segment contributes to the observed behavior.
+Hop-by-hop measurements, where the measurement method provides observations at intermediate points along the path, can provide finer localization.
+For example, observations at successive points can help determine where delay increases or packet loss appears along a measured path. Such results depend on the placement and coverage of the observation points and on the consistency of the measurement method, timestamps, packet correspondence, and measurement intervals across those points.
+
+The two scopes therefore support different conclusions. An end-to-end result describes the performance of the measured path as a whole, while hop-by-hop results can provide evidence about individual portions of that path. Neither scope should be generalized beyond the endpoints, intermediate observation points, traffic population, and interval represented by the measurement.
+
 ## Flow-, Path-, Direction-, and Time-dependent Results {#flow-path-time}
 
 Performance can depend on packet fields, traffic class, direction, path selection, and time. ECMP, link aggregation, tunneling, traffic engineering, and policy can cause flows between the same endpoints to experience different conditions. Routing convergence, queue bursts, policy changes, endpoint load, and measurement-system changes can produce short-lived differences.
@@ -161,7 +184,7 @@ Cause attribution should remain an inference unless the available evidence suppo
 
 Many operational conditions can affect one or more performance metrics. Their effects depend on the metric: congestion can increase delay and delay variation before causing loss; routing changes can alter delay, reordering, connectivity, or capacity; endpoint and measurement-system behavior can affect results even when the network does not change.
 
-The list below is not a complete taxonomy of network faults. Its purpose is to illustrate why a metric result requires interpretation in context.
+This section discusses operational conditions that affect performance measurements and factors that limit measurement visibility.  
 
 ## Congestion and Queue Behavior {#congestion}
 
@@ -182,6 +205,14 @@ A path change can increase or decrease delay without loss. Convergence can creat
 Endpoints and the measurement system itself can affect measurement outcomes. Active receivers or reflectors can reach processing limits, apply rate limits, use incorrect configuration, or fail to timestamp or process packets as expected. Passive observation systems can miss packets or records. Hybrid measurement functions can apply marking or measurement processing inconsistently.
 
 Such behavior can alter loss, delay, reordering, duplication, or capacity results without a corresponding change in the network path. Measurement-system state is therefore part of the interpretation context.
+
+## Encryption and Limited On-Path Visibility {#encry}
+
+Encryption can limit the information available to on-path observers for performance measurement. In particular, transport protocols that encrypt control information can prevent observers from accessing packet sequence numbers, acknowledgments, and other fields used to infer connection performance. For example, QUIC encrypts most transport control information, limiting the ability of on-path observers to infer packet loss and retransmission behavior {{RFC9065}} {{RFC9312}}.  
+
+Encryption does not necessarily prevent network-layer performance measurements. Depending on the protocol and observation points, observers can still measure packet counts, packet sizes, timing, and other visible metadata. However, these observations may not provide sufficient information to characterize transport or application performance.
+
+Interpret such measurements according to the information available at the observation points. Distinguish measured network-layer properties from transport- or application-level performance estimates that require additional information.
 
 ## Policy, Filtering, Policing, and Traffic Treatment {#policy}
 
@@ -233,6 +264,27 @@ If analysis infers a cause, report the evidence that supports the inference and 
 
 Related metrics can constrain an interpretation. Consider delay, delay variation, and loss together when examining queueing or path behavior. Reordering together with delay changes can provide evidence of a path change. Some capacity methods use loss and delay during qualification and reporting {{RFC9097}}. Cross-metric correlation is supporting evidence, not proof that one metric caused another.
 
+## Consider Measurements Across Protocol Layers {#interlayer}
+
+Performance measurements at different protocol layers characterize different aspects of network behavior. 
+For example, link-layer retransmissions can increase IP packet delay without causing IP packet loss, while link-layer discards can contribute to IP packet loss. Transport-layer recovery mechanisms can also affect the relationship between IP packet delivery and transport performance.
+Results at different layers may therefore reflect related network conditions without showing the same behavior {{RFC3432}} {{RFC6703}}.
+
+When associating results across layers, consider the metric definitions, observation points, traffic populations, directions, and measurement intervals. Differences in packet identification, encapsulation, retransmission, and aggregation can also affect the relationship between measurements at different layers.
+
+Cross-layer measurements can provide complementary evidence for interpreting IPPM results. However, correlation between results at different layers does not establish causality. Such results should retain their respective metric semantics, and any inference about interlayer relationships requires supporting evidence.
+
+## Relate Network Measurements to Application Performance {#application-performance}
+
+Network operators often measure IP-layer performance, while users experience application performance. The two perspectives do not necessarily align. Network loss, delay, and capacity can affect application behavior, but transport protocols, endpoint processing, application design, and buffering can also influence application performance. 
+{{RFC6703}} distinguishes network characterization from application performance estimation, while {{RFC6390}} discusses the relationship between network performance, application-specific metrics, and user experience.
+
+When relating network measurements to application performance, consider the application traffic, transport behavior, endpoints, paths, and measurement intervals. Network measurements may cover only part of the path or traffic that an application uses.
+Differences in measurement scope or application workload can also affect the relationship between network and application results.
+
+IPPM measurements can provide evidence about the network's contribution to application performance, but they do not directly establish application performance or user experience. 
+Any inference from network metrics to application performance requires additional evidence or an explicit model that accounts for relevant application and transport behavior.
+
 ## Consider Direction, Observation Scope, and Measurement Role {#scope-role}
 
 Record the direction, endpoints, observation points, and measurement roles represented by the result. A one-way result does not describe the reverse path. A result at one observation point does not describe behavior outside that point's visibility. A reflected measurement includes the forward path, remote processing, and the return path. Operational conclusions should remain within that visibility.
@@ -281,7 +333,8 @@ Do not generalize a positive result beyond the semantics of the selected metric.
 
 ## Packet Loss {#metric-loss}
 
-{{RFC7680}} defines the Type-P-One-way-Packet-Loss singleton result as either successful reception or loss for a packet sent from a specified source to a specified destination at a specified time. The loss-threshold waiting time, Tmax, defines loss: the metric classifies a packet as lost when the destination does not receive it within Tmax. The singleton loss result is therefore closely related to the corresponding one-way delay result: reception produces a finite delay, while non-reception within Tmax produces an undefined delay.
+{{RFC7680}} defines the Type-P-One-way-Packet-Loss singleton result as either successful reception or loss for a packet sent from a specified source to a specified destination at a specified time. The loss-threshold waiting time, Tmax, defines loss: the metric classifies a packet as lost when the destination does not receive it within Tmax. 
+The singleton loss result is closely related to the corresponding one-way delay result: reception within Tmax produces a finite delay, while failure to receive the packet within Tmax produces an undefined delay.
 
 Preserve these semantics. A packet that the metric classifies as lost does not identify a discard location or cause; the metric establishes only that the destination did not receive the packet within the defined conditions. The configured waiting threshold separates a very large delay from a loss result, so Tmax forms part of the measurement context. Type-P, path information when available, and measurement error or calibration information can also matter.
 
@@ -327,9 +380,21 @@ The measurement method also matters. In an active system, the sender can avoid t
 
 Capacity-related results depend strongly on terminology and metric definition. {{RFC5136}} distinguishes IP-layer capacity, usage, utilization, and available capacity and emphasizes that capacity is meaningful only with respect to a specified protocol layer, Type-P, path or link, time, and interval. Do not conflate these quantities with one another or with generic "bandwidth" or application throughput.
 
-As a concrete IPPM measurement example, {{RFC9097}} defines Type-P-One-way-IP-Capacity and Maximum IP-Layer Capacity using active methods. {{RFC9097}} determines Maximum IP-Layer Capacity over specified sub-intervals and qualifies the result with other performance metrics and thresholds. The Type-P, number of flows, offered load, sub-interval duration, test interval, qualification criteria, sender and receiver behavior, and competing traffic are therefore part of the interpretation context. {{RFC9097}} also requires related loss and round-trip-delay results to accompany capacity reporting.
+As a concrete IPPM measurement example, {{RFC9097}} defines Type-P-One-way-IP-Capacity and Maximum IP-Layer Capacity using active methods. {{RFC9097}} determines Maximum IP-Layer Capacity over specified sub-intervals and qualifies the result with other performance metrics and thresholds. The Type-P, number of flows, offered load, sub-interval duration, test interval, qualification criteria, sender and receiver behavior, and competing traffic are therefore part of the interpretation context. 
+{{RFC9097}} also recommends reporting loss ratios and round-trip delay statistics alongside Maximum IP-Layer Capacity results.
 
 A change in a capacity-related result does not identify whether path capacity, competing traffic, shaping or policing, packet treatment, endpoint limits, physical-layer conditions, or the measurement procedure changed. Some active capacity methods can perturb the measured environment because they offer substantial load by design. Tie the reported value to the selected capacity metric rather than a generic throughput result, and report measurement-induced effects when they affect interpretation.
+
+## End-to-End and Hop-by-Hop Interpretation {#end_hop_inp}
+
+The relationship between end-to-end and hop-by-hop results depends on the metric and measurement method. 
+{{RFC9343}} provides an example of a method that supports both measurement scopes.
+
+Do not assume that hop-by-hop metric results combine directly into the corresponding end-to-end result. The relationship depends on the metric and measurement method. Delay components may accumulate along a path, but timestamp locations, processing boundaries, and measurement errors affect the relationship between per-hop and end-to-end delay. Packet loss across multiple segments does not combine by adding loss ratios. Reordering observed at one point can be corrected or changed later in the path. End-to-end capacity can depend on the limiting portion of the path rather than on an additive combination of per-hop capacity values.
+
+When associating hop-by-hop observations with an end-to-end result, align the packet or traffic population, path, direction, measurement interval, metric parameters, and observation points. Differences among these elements can produce apparent inconsistencies even when each individual result is valid.
+
+Hop-by-hop information can narrow the location associated with an end-to-end performance change, but it does not by itself establish the operational cause. Attribution still requires supporting evidence appropriate to the affected segment or node.  
 
 ## Cross-Metric Interpretation {#metric-cross}
 
@@ -399,7 +464,9 @@ A controlled change is useful when the changed parameter and the resulting chang
 
 A passive result describes traffic that the observation function selects at specified Observation Points. Some passive methods observe all packets at an Observation Point, while others first apply filtering or other selection criteria. The selected stream of interest therefore forms part of the measurement definition and interpretation context.
 
-The absence of a packet from an observation does not, by itself, establish network packet loss. The packet may bypass the Observation Point, fail the selection criteria, or escape capture or export. When an analyst infers loss or another transfer property by comparing observations at multiple points, the conclusion covers only the network segment and packet population that those observations cover.
+The absence of a packet from an observation does not, by itself, establish network packet loss. The packet may bypass the Observation Point, fail the selection criteria, or escape capture or export. When an analyst infers loss or another transfer property by comparing observations at multiple points, the conclusion covers only the network segment and packet population that those observations cover.  
+
+For encrypted traffic, the available protocol information can further limit what an on-path observer can measure or infer. Network-layer observations may remain possible even when encryption prevents access to transport-layer information needed to characterize connection performance (see {{encry}}).  
 
 ## Packet Correspondence Across Observation Points {#passive-correlation}
 
@@ -441,13 +508,22 @@ Check unexpected changes in passive results against measurement-system state as 
 
 Hybrid Methods of Measurement combine attributes of active and passive methods {{RFC7799}}. The particular combination matters for interpretation. RFC 7799 distinguishes, among other cases, Hybrid Type I methods that augment or modify a single stream of interest or otherwise modify its treatment, and Hybrid Type II methods that coordinate two or more streams of interest measured using different method characteristics. Hybrid interpretation should begin by identifying which active and passive attributes are present and how they can affect the result.
 
-The Alternate-Marking Method provides a concrete example on live traffic. {{RFC9341}} notes that the application determines whether the method qualifies as Passive or Hybrid, and {{RFC7799}} classifies implementations that change marking-field values at domain edges as Hybrid Type I.
+The Alternate-Marking Method provides an example of performance measurement on live traffic. {{RFC9341}} discusses its applicability to Passive and Hybrid measurements and classifies implementations that modify marking fields at domain edges as Hybrid Type I, according to {{RFC7799}}.  
 
 ## Identify the Hybrid Construction {#hybrid-construction}
 
 A hybrid result should identify how the method departs from purely passive observation or purely active generation. Relevant questions include whether the measurement function modifies or augments an existing packet stream, generates additional load or measurement streams, coordinates multiple streams, or controls specific packet or stream characteristics.
 
 These distinctions limit the scope of generalization from the result. A method that marks production packets, one that observes production traffic while adding a separate load stream, and one that analyzes an active stream together with a production stream can all be hybrid, but they do not have the same interpretation properties.
+
+## Combining Active Measurements with On-Path Hybrid Techniques {#hybrid-active}
+
+Active measurement methods can be combined with on-path hybrid measurement techniques to obtain additional information from intermediate nodes. 
+For example, {{I-D.ietf-ippm-on-path-active-measurements}} describes the use of active test packets with Alternate Marking or In Situ OAM (IOAM) to complement end-to-end measurements with on-path observations. These observations can help identify the portion of a measured path associated with a performance change.
+
+When interpreting the combined results, distinguish the end-to-end measurement result from observations collected at intermediate nodes. Check whether the observations cover the same measurement stream, path, direction, and time interval.
+Differences in observation coverage, measurement parameters, timestamping, or packet treatment can affect the relationship between the results.
+When relating active measurement results to production traffic, distinguish path congruence from forwarding-treatment equivalence as described in {{RFC10014}}.
 
 ## Measurement Marking, Augmentation, and Treatment Equivalence {#hybrid-marking}
 
@@ -506,6 +582,7 @@ Control-plane state does not always identify the data path that packets traverse
 Interface state, utilization, queue state, discard counters, policer or shaper state, filtering state, and similar information can show whether a proposed explanation is consistent with conditions during the measurement. Queue and discard information can support an interpretation of loss or delay; utilization, competing traffic, traffic class, and qualification conditions can be relevant to capacity results. Validation state and counters provide one form of traffic-treatment context where networks deploy validation functions.
 
 These data are not direct explanations unless their scope matches the measurement. A device counter can cover several traffic populations or time intervals, and an overlapping counter increment does not prove that the measured traffic caused or experienced that increment.
+When supporting evidence comes from another protocol layer, identify its measurement scope and relationship to the IP packet population before using it to interpret an IPPM result (see {{interlayer}}).
 
 ## Measurement-System Context {#system-state}
 
@@ -515,7 +592,9 @@ Use this context when either the measured network or the measurement system coul
 
 ## OAM, Telemetry, and Event Context {#oam-telemetry}
 
-OAM mechanisms, telemetry, device logs, and event records can provide state and timing information. {{RFC9232}} describes telemetry as including data generation, collection, correlation, and consumption for network visibility and operation. Such data can show whether a result is consistent with a routing event, interface event, resource condition, policy change, or measurement-system change.
+OAM mechanisms, telemetry, device logs, and event records can provide measurement and network-state information.
+{{RFC10014}} distinguishes path congruence from forwarding-treatment equivalence for OAM packets. OAM packets can follow the same path as production traffic while receiving different forwarding treatment. This distinction matters when interpreting whether OAM measurement results represent the performance of production traffic.
+{{RFC9232}} describes telemetry as including data generation, collection, correlation, and consumption for network visibility and operation. Such data can show whether a result is consistent with a routing event, interface event, resource condition, policy change, or measurement-system change.
 
 Data granularity limits the correlation. A telemetry series with samples every several minutes cannot localize a short per-packet event within that interval. Path-discovery or OAM packets may also follow a different path or receive different treatment from the traffic that the metric represents.
 
@@ -534,6 +613,7 @@ This section describes how to use the preceding considerations when analysts com
 State the conclusion that the measurement aims to support. {{RFC6703}} shows that intended use affects measurement design and reporting. Apply the same principle to interpretation: compare the scope of the conclusion with the scope established by the metric, parameters, measured population, and method.
 
 Make any generalization beyond that scope explicit and support it with evidence or stated assumptions.
+When the intended use involves application performance, identify which aspects of application behavior the network measurements can represent and what additional evidence supports the interpretation (see {{application-performance}}).
 
 ## Align Scope and Time Before Correlation {#event-correlation}
 
@@ -550,6 +630,7 @@ The same applies across Active, Passive, and Hybrid measurements. Different resu
 ## Use Complementary Measurements to Reduce Ambiguity {#complementary}
 
 Different metrics and methods can provide complementary evidence when the analysis makes their scopes explicit. Loss together with delay or queue information can constrain some explanations. Active measurements can test selected packet characteristics or vantage points; passive measurements can show behavior in observed production traffic; hybrid methods can add measurement structure while retaining some production-traffic characteristics.
+Active measurements combined with on-path telemetry can also provide intermediate observations that help interpret end-to-end results (see {{hybrid-active}}).
 
 Do not merge measurements that cover different populations or conditions as if they measured the same event. Their differences can still be useful evidence.
 
