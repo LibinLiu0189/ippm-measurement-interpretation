@@ -696,4 +696,4 @@ This document has no IANA actions.
 # Acknowledgements {#ack}
 {: numbered="false"}
 
-The author thanks Giuseppe Fioccola for reviewing earlier versions of this document, and Ruediger Geib, Tim Chown, and Ike Kunze for their helpful comments and discussion.
+The author thanks Giuseppe Fioccola for reviewing this document and significantly helpful comments to improve the document, and Ruediger Geib, Tim Chown, and Ike Kunze for their helpful comments and discussion.
